@@ -1,3 +1,6 @@
+# -*- encoding: utf8 -*-
+
+from __future__ import unicode_literals
 import sys
 from django.core.management.base import BaseCommand, CommandError
 from sorl.thumbnail import default
@@ -5,7 +8,7 @@ from sorl.thumbnail import default
 
 class Command(BaseCommand):
     help = (
-        u'Handles thumbnails and key value store'
+        'Handles thumbnails and key value store'
     )
     args = '[cleanup, clear]'
     option_list = BaseCommand.option_list
@@ -14,7 +17,7 @@ class Command(BaseCommand):
         verbosity = int(options.get('verbosity'))
 
         if not labels:
-            print self.print_help('thumbnail', '')
+            print(self.print_help('thumbnail', ''))
             sys.exit(1)
 
         if len(labels) != 1:

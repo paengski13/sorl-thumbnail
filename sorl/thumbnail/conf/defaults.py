@@ -40,6 +40,9 @@ THUMBNAIL_REDIS_UNIX_SOCKET_PATH = None
 # maximum or ``0`` if your caching backend can handle that as infinate.
 THUMBNAIL_CACHE_TIMEOUT = 3600 * 24 * 365 * 10 # 10 years
 
+# The cache configuration to use for storing thumbnail data
+THUMBNAIL_CACHE = 'default'
+
 # Key prefix used by the key value store
 THUMBNAIL_KEY_PREFIX = 'sorl-thumbnail'
 
@@ -65,6 +68,10 @@ THUMBNAIL_QUALITY = 95
 # Gaussian blur radius
 THUMBNAIL_BLUR = 0
 
+# Adds padding around the image to match the requested size without cropping
+THUMBNAIL_PADDING = False
+THUMBNAIL_PADDING_COLOR = '#ffffff'
+
 # Save as progressive when saving as jpeg
 THUMBNAIL_PROGRESSIVE = True
 
@@ -85,6 +92,10 @@ THUMBNAIL_DUMMY_SOURCE = 'http://dummyimage.com/%(width)sx%(height)s'
 # or height given
 THUMBNAIL_DUMMY_RATIO = 1.5
 
+# Enables creation of multiple-resolution (aka "Retina") images.
+# We don't create retina images by default to optimize performance.
+THUMBNAIL_ALTERNATIVE_RESOLUTIONS = []
+
 # Lazy fill empty thumbnail like THUMBNAIL_DUMMY
 THUMBNAIL_LAZY_FILL_EMPTY = False
 
@@ -96,3 +107,7 @@ THUMBNAIL_PIL_MAXBLOCK_FALLBACK = 2 ** 24
 
 # Default width when using filters for texts
 THUMBNAIL_FILTER_WIDTH = 500
+
+# Should we flatten images by default (fixes a lot of transparency issues with
+# imagemagick)
+THUMBNAIL_FLATTEN = False
