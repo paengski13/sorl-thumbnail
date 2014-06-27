@@ -1,22 +1,20 @@
 # coding=utf-8
-from __future__ import unicode_literals
+from __future__ import unicode_literals, division
 
-import os
-import re
 import sys
 import logging
-import shutil
-from os.path import join as pjoin
 from subprocess import Popen, PIPE
 
+import shutil
+import os
+import re
+from os.path import join as pjoin
 from PIL import Image
 from django.utils.six import StringIO
 from django.core import management
 from django.core.files.storage import default_storage
 from django.template.loader import render_to_string
 from django.test.client import Client
-
-from django.utils import unittest
 from django.test import TestCase
 from django.test.utils import override_settings
 
@@ -28,13 +26,12 @@ from sorl.thumbnail.images import ImageFile
 from sorl.thumbnail.log import ThumbnailLogHandler
 from sorl.thumbnail.parsers import parse_crop, parse_geometry
 from sorl.thumbnail.templatetags.thumbnail import margin
-
 from sorl.thumbnail.base import ThumbnailBackend
-
 from .models import Item
 from .storage import MockLoggingHandler
-from .compat import unittest, PY3
-from .utils import same_open_fd_count
+from .compat import unittest
+from .utils import same_open_fd_count, override_custom_settings
+
 
 skip = unittest.skip
 skipIf = unittest.skipIf
@@ -42,6 +39,9 @@ skipIf = unittest.skipIf
 handler = ThumbnailLogHandler()
 handler.setLevel(logging.ERROR)
 logging.getLogger('sorl.thumbnail').addHandler(handler)
+
+
+DATA_DIR = pjoin(settings.MEDIA_ROOT, 'data')
 
 
 class BaseStorageTestCase(unittest.TestCase):
@@ -52,12 +52,12 @@ class BaseStorageTestCase(unittest.TestCase):
         fn = pjoin(settings.MEDIA_ROOT, self.name)
         Image.new('L', (100, 100)).save(fn)
         self.im = ImageFile(self.name)
-        
+
         logger = logging.getLogger('slog')
         logger.setLevel(logging.DEBUG)
         handler = MockLoggingHandler(level=logging.DEBUG)
         logger.addHandler(handler)
-        self.log = handler.messages['debug']        
+        self.log = handler.messages['debug']
 
     def tearDown(self):
         shutil.rmtree(settings.MEDIA_ROOT)
@@ -104,21 +104,21 @@ class AlternativeResolutionsTest(BaseStorageTestCase):
         get_thumbnail(self.im, '50x50')
 
         actions = [
-             # save regular resolution, same as in StorageTestCase
-             'open: retina.jpg',
-             'save: test/cache/19/10/1910dc350bbe9ee55fd9d8d3d5e38e19.jpg',
-             'get_available_name: test/cache/19/10/1910dc350bbe9ee55fd9d8d3d5e38e19.jpg',
-             'exists: test/cache/19/10/1910dc350bbe9ee55fd9d8d3d5e38e19.jpg',
+            # save regular resolution, same as in StorageTestCase
+            'open: retina.jpg',
+            'save: test/cache/19/10/1910dc350bbe9ee55fd9d8d3d5e38e19.jpg',
+            'get_available_name: test/cache/19/10/1910dc350bbe9ee55fd9d8d3d5e38e19.jpg',
+            'exists: test/cache/19/10/1910dc350bbe9ee55fd9d8d3d5e38e19.jpg',
 
-             # save the 1.5x resolution version
-             'save: test/cache/19/10/1910dc350bbe9ee55fd9d8d3d5e38e19@1.5x.jpg',
-             'get_available_name: test/cache/19/10/1910dc350bbe9ee55fd9d8d3d5e38e19@1.5x.jpg',
-             'exists: test/cache/19/10/1910dc350bbe9ee55fd9d8d3d5e38e19@1.5x.jpg',
+            # save the 1.5x resolution version
+            'save: test/cache/19/10/1910dc350bbe9ee55fd9d8d3d5e38e19@1.5x.jpg',
+            'get_available_name: test/cache/19/10/1910dc350bbe9ee55fd9d8d3d5e38e19@1.5x.jpg',
+            'exists: test/cache/19/10/1910dc350bbe9ee55fd9d8d3d5e38e19@1.5x.jpg',
 
-             # save the 2x resolution version
-             'save: test/cache/19/10/1910dc350bbe9ee55fd9d8d3d5e38e19@2x.jpg',
-             'get_available_name: test/cache/19/10/1910dc350bbe9ee55fd9d8d3d5e38e19@2x.jpg',
-             'exists: test/cache/19/10/1910dc350bbe9ee55fd9d8d3d5e38e19@2x.jpg'
+            # save the 2x resolution version
+            'save: test/cache/19/10/1910dc350bbe9ee55fd9d8d3d5e38e19@2x.jpg',
+            'get_available_name: test/cache/19/10/1910dc350bbe9ee55fd9d8d3d5e38e19@2x.jpg',
+            'exists: test/cache/19/10/1910dc350bbe9ee55fd9d8d3d5e38e19@2x.jpg'
         ]
         self.assertEqual(self.log, actions)
 
@@ -177,6 +177,7 @@ class SimpleTestCaseBase(unittest.TestCase):
 
         if not os.path.exists(settings.MEDIA_ROOT):
             os.makedirs(settings.MEDIA_ROOT)
+            shutil.copytree(settings.DATA_ROOT, DATA_DIR)
 
         dims = [
             (500, 500),
@@ -229,7 +230,6 @@ class SimpleTestCase(SimpleTestCaseBase):
 
         self.assertEqual(t.x, 200)
         self.assertEqual(t.y, 100)
-
 
         t = self.backend.get_thumbnail(item.image, '400x300', crop='center', upscale=True)
         self.assertEqual(t.x, 400)
@@ -316,15 +316,15 @@ class SimpleTestCase(SimpleTestCaseBase):
         self.assertEqual(
             ImageFile('http://www.image.jpg').serialize_storage(),
             'sorl.thumbnail.images.UrlStorage',
-            )
+        )
         self.assertEqual(
             ImageFile('http://www.image.jpg', default.storage).serialize_storage(),
             'thumbnail_tests.storage.TestStorage',
-            )
+        )
         self.assertEqual(
             ImageFile('getit', default_storage).serialize_storage(),
             'thumbnail_tests.storage.TestStorage',
-            )
+        )
 
     @skipIf(sys.platform == 'darwin', 'quality is saved a different way on os x')
     def test_quality(self):
@@ -353,9 +353,11 @@ class SimpleTestCase(SimpleTestCaseBase):
     def test_abspath(self):
         item = Item.objects.get(image='500x500.jpg')
         image = ImageFile(item.image.path)
+
         val = render_to_string('thumbnail20.html', {
             'image': image,
         }).strip()
+
         im = self.backend.get_thumbnail(image, '32x32', crop='center')
         self.assertEqual('<img src="%s">' % im.url, val)
 
@@ -373,7 +375,8 @@ class SimpleTestCase(SimpleTestCaseBase):
         val = render_to_string('htmlfilter.html', {
             'text': text,
         }).strip()
-        self.assertEqual('<img alt="A image!" src="/media/test/cache/2e/35/2e3517d8aa949728b1ee8b26c5a7bbc4.jpg" />', val)
+        self.assertEqual('<img alt="A image!" src="/media/test/cache/2e/35/2e3517d8aa949728b1ee8b26c5a7bbc4.jpg" />',
+                         val)
 
     def test_markdown_filter(self):
         text = '![A image!](http://dummyimage.com/800x800)'
@@ -384,7 +387,6 @@ class SimpleTestCase(SimpleTestCaseBase):
 
 
 class TemplateTestCaseA(SimpleTestCaseBase):
-
     def test_model(self):
         item = Item.objects.get(image='500x500.jpg')
         val = render_to_string('thumbnail1.html', {
@@ -455,9 +457,7 @@ class TemplateTestCaseA(SimpleTestCaseBase):
         self.assertEqual(bool(m), True)
 
     def test_orientation(self):
-        data_dir = pjoin(settings.MEDIA_ROOT, 'data')
-        shutil.copytree(settings.DATA_ROOT, data_dir)
-        ref = Image.open(pjoin(data_dir, '1_topleft.jpg'))
+        ref = Image.open(pjoin(DATA_DIR, '1_topleft.jpg'))
         top = ref.getpixel((14, 7))
         left = ref.getpixel((7, 14))
         engine = PILEngine()
@@ -469,9 +469,21 @@ class TemplateTestCaseA(SimpleTestCaseBase):
                 y = sum(y) / len(y)
             return abs(x - y)
 
-        for name in sorted(os.listdir(data_dir)):
+        data_images = (
+            '1_topleft.jpg',
+            '2_topright.jpg',
+            '3_bottomright.jpg',
+            '4_bottomleft.jpg',
+            '5_lefttop.jpg',
+            '6_righttop.jpg',
+            '7_rightbottom.jpg',
+            '8_leftbottom.jpg'
+        )
+
+        for name in data_images:
             th = self.backend.get_thumbnail('data/%s' % name, '30x30')
             im = engine.get_image(th)
+
             self.assertLess(epsilon(top, im.getpixel((14, 7))), 10)
             self.assertLess(epsilon(left, im.getpixel((7, 14))), 10)
             exif = im._getexif()
@@ -496,7 +508,8 @@ class TemplateTestCaseB(unittest.TestCase):
             'source': 'http://dummyimage.com/120x100/',
             'dims': 'x66',
         }).strip()
-        self.assertEqual(val, '<img src="/media/test/cache/7b/cd/7bcd20922c6750649f431df7c3cdbc5e.jpg" width="79" height="66" class="landscape">')
+        self.assertEqual(val,
+                         '<img src="/media/test/cache/7b/cd/7bcd20922c6750649f431df7c3cdbc5e.jpg" width="79" height="66" class="landscape">')
 
     def test_empty(self):
         val = render_to_string('thumbnail5.html', {}).strip()
@@ -504,9 +517,9 @@ class TemplateTestCaseB(unittest.TestCase):
 
 
 class TemplateTestCaseClient(TestCase):
-
     def test_empty_error(self):
-        with self.settings(THUMBNAIL_DEBUG=False):
+
+        with override_custom_settings(settings, THUMBNAIL_DEBUG=False):
             from django.core.mail import outbox
 
             client = Client()
@@ -519,14 +532,9 @@ class TemplateTestCaseClient(TestCase):
             self.assertEqual(end, '[Errno 2] No such file or directory')
 
 
-class CropTestCase(unittest.TestCase):
+class CropTestCase(SimpleTestCaseBase):
     def setUp(self):
-        self.backend = get_module_class(settings.THUMBNAIL_BACKEND)()
-        self.engine = get_module_class(settings.THUMBNAIL_ENGINE)()
-        self.kvstore = get_module_class(settings.THUMBNAIL_KVSTORE)()
-
-        if not os.path.exists(settings.MEDIA_ROOT):
-            os.makedirs(settings.MEDIA_ROOT)
+        super(CropTestCase, self).setUp()
 
         # portrait
         name = 'portrait.jpg'
@@ -613,6 +621,27 @@ class CropTestCase(unittest.TestCase):
                 for y in range(0, 99, 10):
                     self.assertEqual(0 <= mean_pixel(x, y) < 5, True)
 
+    def test_smart_crop(self):
+        # TODO: Complete test for smart crop
+        thumb = self.backend.get_thumbnail(
+            '32x32',
+            'data/white_border.jpg',
+            crop='smart')
+
+    def test_crop_image_with_icc_profile(self):
+        name = 'data/icc_profile_test.jpg'
+        item, _ = Item.objects.get_or_create(image=name)
+
+        im = ImageFile(item.image)
+        th = self.backend.get_thumbnail(im, '100x100')
+
+        engine = PILEngine()
+
+        self.assertEqual(
+            engine.get_image(im).info.get('icc_profile'),
+            engine.get_image(th).info.get('icc_profile')
+        )
+
     def tearDown(self):
         shutil.rmtree(settings.MEDIA_ROOT)
 
@@ -621,24 +650,25 @@ class DummyTestCase(TestCase):
     def setUp(self):
         self.backend = get_module_class(settings.THUMBNAIL_BACKEND)()
 
-    @skip('stalling')
     def test_dummy_tags(self):
-        with self.settings(THUMBNAIL_DUMMY=True):
-            val = render_to_string('thumbnaild1.html', {
-                'anything': 'AINO',
-            }).strip()
-            self.assertEqual(val, '<img style="margin:auto" width="200" height="100">')
-            val = render_to_string('thumbnaild2.html', {
-                'anything': None,
-            }).strip()
-            self.assertEqual(val, '<img src="http://dummyimage.com/300x200" width="300" height="200"><p>NOT</p>')
-            val = render_to_string('thumbnaild3.html', {
-            }).strip()
-            self.assertEqual(val, '<img src="http://dummyimage.com/600x400" width="600" height="400">')
+        settings.THUMBNAIL_DUMMY = True
+
+        val = render_to_string('thumbnaild1.html', {
+            'anything': 'AINO',
+        }).strip()
+        self.assertEqual(val, '<img style="margin:auto" width="200" height="100">')
+        val = render_to_string('thumbnaild2.html', {
+            'anything': None,
+        }).strip()
+        self.assertEqual(val, '<img src="http://dummyimage.com/300x200" width="300" height="200"><p>NOT</p>')
+        val = render_to_string('thumbnaild3.html', {
+        }).strip()
+        self.assertEqual(val, '<img src="http://dummyimage.com/600x400" width="600" height="400">')
+
+        settings.THUMBNAIL_DUMMY = False
 
 
 class ModelTestCase(SimpleTestCaseBase):
-
     def test_field1(self):
         self.kvstore.clear()
         item = Item.objects.get(image='100x100.jpg')
@@ -689,14 +719,11 @@ class TestInputCase(unittest.TestCase):
         im = Image.new('L', (666, 666))
         im.save(fn)
 
-    @skipIf(PY3, 'hash is different')
     def test_nonascii(self):
         # also test the get_thumbnail shortcut
         th = get_thumbnail(self.name, '200x200')
-        self.assertEqual(
-            th.url,
-            '/media/test/cache/8e/16/8e1629dd742c05fc3812ace2e7569f85.jpg'
-        )
+        hash_file = '/media/test/cache/99/45/9945ad3ee0397274de77abd37d5db7bb.jpg'
+        self.assertEqual(th.url, hash_file)
 
     def tearDown(self):
         shutil.rmtree(settings.MEDIA_ROOT)
@@ -722,7 +749,7 @@ class TestDescriptors(unittest.TestCase):
         with same_open_fd_count(self):
             self.engine.is_valid_image(b'invalidbinaryimage.jpg')
 
-    @skipIf(os.environ.get('SETTINGS', None) == 'pgmagick' and  sys.version_info.major == 2,
+    @skipIf('pgmagick_engine' in settings.THUMBNAIL_ENGINE and sys.version_info.major == 2,
             'No output has been received in the last 10 minutes, this potentially indicates something wrong with the build itself.')
     def test_write(self):
         with same_open_fd_count(self):
@@ -733,14 +760,13 @@ class TestDescriptors(unittest.TestCase):
 
 
 class CommandTests(SimpleTestCase):
-
     def test_clear_action(self):
-        out = StringIO()
+        out = StringIO('')
         management.call_command('thumbnail', 'clear', verbosity=1, stdout=out)
         self.assertEqual(out.getvalue(), "Clear the Key Value Store ... [Done]\n")
 
     def test_cleanup_action(self):
-        out = StringIO()
+        out = StringIO('')
         management.call_command('thumbnail', 'cleanup', verbosity=1, stdout=out)
         self.assertEqual(out.getvalue(), "Cleanup thumbnails ... [Done]\n")
 

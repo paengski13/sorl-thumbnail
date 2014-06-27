@@ -1,15 +1,16 @@
 # -*- encoding: utf8 -*-
 from __future__ import unicode_literals
 import logging
-import re
+
 import sys
+
+import re
 import os
 from functools import wraps
 from django.template import Library, Node, NodeList, TemplateSyntaxError
 from django.utils.encoding import smart_str
 from django.conf import settings
 from sorl.thumbnail.conf import settings as sorl_settings
-
 from sorl.thumbnail import default
 from sorl.thumbnail.images import ImageFile, DummyImageFile
 from sorl.thumbnail.parsers import parse_geometry
@@ -34,7 +35,7 @@ def safe_filter(error_output=''):
             try:
                 return f(*args, **kwargs)
             except Exception as err:
-                if settings.THUMBNAIL_DEBUG:
+                if sorl_settings.THUMBNAIL_DEBUG:
                     raise
                 logger.error('Thumbnail filter failed: %s' % err.message,
                              exc_info=sys.exc_info())
@@ -56,7 +57,7 @@ class ThumbnailNodeBase(Node):
         try:
             return self._render(context)
         except Exception:
-            if settings.THUMBNAIL_DEBUG:
+            if sorl_settings.THUMBNAIL_DEBUG:
                 raise
 
             error_message = 'Thumbnail tag failed'

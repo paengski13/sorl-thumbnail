@@ -183,8 +183,8 @@ The port for Redis server. Only applicable for the Redis Key Value Store
 
 - Default: ``3600 * 24 * 365 * 10``
 
-Cache timeout for Cached DB Key Value Store. You should probably keep this at
-maximum or ``None`` if your caching backend can handle that as infinite.
+Cache timeout for Cached DB Key Value Store in seconds. You should probably keep this 
+at maximum or ``None`` if your caching backend can handle that as infinite.
 Only applicable for the Cached DB Key Value Store.
 
 
@@ -266,6 +266,14 @@ Saves jpeg thumbnails as progressive jpegs. This can be overridden by individual
 options.
 
 
+``THUMBNAIL_ORIENTATION``
+========================
+
+- Default: ``True``
+
+Orientate the thumbnail with respect to source EXIF orientation tag
+
+
 ``THUMBNAIL_DUMMY``
 ===================
 
@@ -301,7 +309,7 @@ This value sets an image ratio to all thumbnails that are not defined by width
 have that).
 
 ``THUMBNAIL_ALTERNATIVE_RESOLUTIONS``
-====================================
+=====================================
 
 - Default: ``[]``
 - Example: ``[1.5, 2]``
@@ -311,7 +319,7 @@ for every thumbnail. Resolution multiplicators, e.g. value 2 means for every thu
 of regular size x\*y, additional thumbnail of 2x\*2y size is created.
 
 ``THUMBNAIL_FILTER_WIDTH``
-=========================
+==========================
 
 - Default: ``500``
 
@@ -323,5 +331,5 @@ that regex replaces references to images with thumbnails.
 
 - Default: ``None``
 
-This value sets the timeout value when retrieving a source image from a URL. If no
-timeout value is specified, it will wait indefinitely for a response.
+This value sets the timeout value in seconds when retrieving a source image from a URL. 
+If no timeout value is specified, it will wait indefinitely for a response.
