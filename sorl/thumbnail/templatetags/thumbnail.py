@@ -181,10 +181,12 @@ def is_portrait(file_):
     """
     A very handy filter to determine if an image is portrait or landscape.
     """
-    if sorl_settings.THUMBNAIL_DUMMY:
-        return sorl_settings.THUMBNAIL_DUMMY_RATIO < 1
+    
     if not file_:
+        if sorl_settings.THUMBNAIL_DUMMY:
+            return sorl_settings.THUMBNAIL_DUMMY_RATIO < 1
         return False
+    
     image_file = default.kvstore.get_or_set(ImageFile(file_))
     return image_file.is_portrait()
 
