@@ -101,7 +101,8 @@ class ThumbnailBackend(object):
         if not thumbnail.exists():
             try:
                 source_image = default.engine.get_image(source)
-            except IOError:
+            except IOError as e:
+                logger.exception(e)
                 if settings.THUMBNAIL_DUMMY:
                     return DummyImageFile(geometry_string)
                 else:
