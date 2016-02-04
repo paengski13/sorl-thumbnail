@@ -93,7 +93,7 @@ class ThumbnailBackend(object):
                 options.setdefault(key, value)
 
         name = self._get_thumbnail_filename(source, geometry_string, options)
-        thumbnail = ImageFile(name, default.storage)
+        thumbnail = ImageFile(name, default.storage, key=tokey(source.key, geometry_string, serialize(options)))
         cached = default.kvstore.get(thumbnail)
 
         if cached:
@@ -117,6 +117,7 @@ class ThumbnailBackend(object):
 
                     return thumbnail
 
+            
             # We might as well set the size since we have the image in memory
             image_info = default.engine.get_image_info(source_image)
             options['image_info'] = image_info
@@ -130,6 +131,7 @@ class ThumbnailBackend(object):
                                                      options, thumbnail.name)
             finally:
                 default.engine.cleanup(source_image)
+
 
         # If the thumbnail exists we don't create it, the other option is
         # to delete and write but this could lead to race conditions so I

@@ -78,7 +78,7 @@ class BaseImageFile(object):
 class ImageFile(BaseImageFile):
     _size = None
 
-    def __init__(self, file_, storage=None):
+    def __init__(self, file_, storage=None, key=None):
         if not file_:
             raise ThumbnailError('File is empty.')
 
@@ -87,6 +87,9 @@ class ImageFile(BaseImageFile):
             self.name = file_.name
         else:
             self.name = force_unicode(file_)
+            
+        if key:
+            self._key = key
 
         # figure out storage
         if storage is not None:
@@ -165,7 +168,9 @@ class ImageFile(BaseImageFile):
 
     @property
     def key(self):
-        return tokey(self.name, self.serialize_storage())
+        if not hasattr(self, '_key'):
+            self._key = tokey(self.name, self.serialize_storage())
+        return self._key
 
     def serialize(self):
         return serialize_image_file(self)
