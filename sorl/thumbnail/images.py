@@ -1,17 +1,18 @@
 # encoding=utf-8
 
 from __future__ import unicode_literals, division
+import json
 import os
 import re
 
 from django.core.files.base import File, ContentFile
 from django.core.files.storage import Storage  # , default_storage
+from django.utils.encoding import force_text
 from django.utils.functional import LazyObject, empty
 from sorl.thumbnail import default
 from sorl.thumbnail.conf import settings
-from sorl.thumbnail.compat import (json, urlopen, urlparse, urlsplit,
-                                   quote, quote_plus,
-                                   URLError, force_unicode, encode)
+from sorl.thumbnail.compat import (urlopen, urlparse, urlsplit,
+                                   quote, quote_plus, URLError, encode)
 from sorl.thumbnail.default import storage as default_storage
 from sorl.thumbnail.helpers import ThumbnailError, tokey, get_module_class, deserialize
 from sorl.thumbnail.parsers import parse_geometry
@@ -86,10 +87,20 @@ class ImageFile(BaseImageFile):
         if hasattr(file_, 'name'):
             self.name = file_.name
         else:
-            self.name = force_unicode(file_)
-            
+            self.name = force_text(file_)
+
         if key:
             self._key = key
+    
+        # TODO: Add a customizable naming method as a signal
+
+        # Remove query args from names. Fixes cache and signature arguments
+        # from third party services, like Amazon S3 and signature args.
+        self.name = self.name.split('?')[0]
+
+        # Support for relative protocol urls
+        if self.name.startswith('//'):
+            self.name = 'http:' + self.name
 
         # figure out storage
         if storage is not None:
@@ -198,11 +209,8 @@ class UrlStorage(Storage):
         url = encode(url, charset, 'ignore')
         scheme, netloc, path, qs, anchor = urlsplit(url)
 
-        # Encode to utf8 to prevent urllib KeyError
-        path = encode(path, charset, 'ignore')
-
-        path = quote(path, '/%')
-        qs = quote_plus(qs, ':&%=')
+        path = quote(path, b'/%')
+        qs = quote_plus(qs, b':&%=')
 
         return urlparse.urlunsplit((scheme, netloc, path, qs, anchor))
 

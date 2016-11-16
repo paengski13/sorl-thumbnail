@@ -82,13 +82,13 @@ class Engine(EngineBase):
             elif orientation == 4:
                 image = image.transpose(Image.FLIP_TOP_BOTTOM)
             elif orientation == 5:
-                image = image.rotate(-90).transpose(Image.FLIP_LEFT_RIGHT)
+                image = image.rotate(-90, expand=1).transpose(Image.FLIP_LEFT_RIGHT)
             elif orientation == 6:
-                image = image.rotate(-90)
+                image = image.rotate(-90, expand=1)
             elif orientation == 7:
-                image = image.rotate(90).transpose(Image.FLIP_LEFT_RIGHT)
+                image = image.rotate(90, expand=1).transpose(Image.FLIP_LEFT_RIGHT)
             elif orientation == 8:
-                image = image.rotate(90)
+                image = image.rotate(90, expand=1)
 
         return image
 
@@ -100,7 +100,7 @@ class Engine(EngineBase):
                 newimage = image.convert('RGBA')
                 transparency = image.info.get('transparency')
                 if transparency is not None:
-                    mask = Image.new('L', image.size, color=transparency)
+                    mask = image.convert('RGBA').split()[-1]
                     newimage.putalpha(mask)
                 return newimage
             return image.convert('RGB')
