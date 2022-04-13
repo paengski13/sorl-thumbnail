@@ -2,7 +2,7 @@
 import os
 
 import pytest
-from django.utils.six import StringIO
+from six import StringIO
 from django.core import management
 
 from sorl.thumbnail.conf import settings

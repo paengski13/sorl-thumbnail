@@ -10,7 +10,7 @@ from functools import wraps
 
 from django.template import Library, Node, NodeList, TemplateSyntaxError
 from django.utils.encoding import smart_str
-from django.utils.six import text_type
+from six import text_type
 from django.conf import settings
 
 from sorl.thumbnail.conf import settings as sorl_settings
@@ -197,12 +197,12 @@ def is_portrait(file_):
     """
     A very handy filter to determine if an image is portrait or landscape.
     """
-    
+
     if not file_:
         if sorl_settings.THUMBNAIL_DUMMY:
             return sorl_settings.THUMBNAIL_DUMMY_RATIO < 1
         return False
-    
+
     image_file = default.kvstore.get_or_set(ImageFile(file_))
     return image_file.is_portrait()
 

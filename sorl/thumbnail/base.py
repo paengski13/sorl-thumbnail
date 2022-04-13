@@ -4,7 +4,7 @@ import logging
 import os
 import re
 
-from django.utils.six import string_types
+from six import string_types
 
 from sorl.thumbnail.conf import settings, defaults as default_settings
 from sorl.thumbnail.helpers import tokey, serialize
@@ -117,7 +117,7 @@ class ThumbnailBackend(object):
                     )
                     return thumbnail
 
-            
+
             # We might as well set the size since we have the image in memory
             image_info = default.engine.get_image_info(source_image)
             options['image_info'] = image_info
